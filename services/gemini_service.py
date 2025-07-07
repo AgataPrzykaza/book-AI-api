@@ -3,7 +3,7 @@ import re
 from typing import Optional
 from google import genai
 from configure.config import GEMINI_API_KEY
-from constants.categories import BOOK_CATEGORIES
+
 
 
 class GeminiService:

@@ -2,8 +2,12 @@ import json,re
 from typing import Optional, List
 from .gemini_service import GeminiService
 from models.book import BookRecommendation
-from constants.categories import BOOK_CATEGORIES
+from constants.categories import BookGenres
+from constants.tropes import BookTropes
+from constants.spice_level import BookSpiceScale
 from .book_service_protocol import BookServiceProtocol
+
+
 
 class BookService(BookServiceProtocol):
     def __init__(self):
@@ -11,7 +15,7 @@ class BookService(BookServiceProtocol):
     
     def get_book_genre(self, title: str, author: str) -> str:
         """Get precise genre for a book"""
-        categories_text = "\n".join(f"- {cat}" for cat in BOOK_CATEGORIES)
+        categories_text = "\n".join(f"- {cat}" for cat in BookGenres.get_all())
         
         prompt = f"""
         Based on the book titled '{title}' by {author}, select the **single most appropriate** genre from the list below.
@@ -214,3 +218,62 @@ class BookService(BookServiceProtocol):
         
         print("Could not extract history-based recommendations from response:", response_text)
         return []
+    
+    
+    
+    
+    def analyze_reading_patterns(self, read_books: List) -> dict:
+        genres = BookGenres.get_all()
+        spice_levels = BookSpiceScale.get_all()
+        tropes = BookTropes.get_all()
+       
+        books_summary = "\n".join([
+            f"- '{book.title}' by {book.author}"
+            for book in read_books
+        ])
+
+        prompt = f"""
+        You are a literary assistant. Based on the user's reading history, analyze their reading patterns and preferences.
+
+        Books they've read and enjoyed:
+        {books_summary}
+
+        Identify their TOP 3 favorite genres, TOP 3 most frequent tropes, and spice tolerance.
+
+        IMPORTANT: Only return the MOST COMMON patterns, not everything you find.
+
+        - Available Genres: {', '.join(genres)}
+        - Available Tropes: {', '.join(tropes)}  
+        - Spice levels: {', '.join(spice_levels)}
+
+        Return EXACTLY this JSON format:
+        {{
+            "favorite_genres": ["top_genre_1", "top_genre_2", "top_genre_3"],
+            "frequent_tropes": ["top_trope_1", "top_trope_2", "top_trope_3"],
+            "spice_tolerance": "most_common_level",
+        }}
+
+        Return MAXIMUM 3 items in each array.
+        """
+        
+        response_text = self.gemini._generate_content(prompt)
+        if not response_text:
+            return {
+            "favorite_genres": [],
+            "frequent_tropes": [],
+            "spice_tolerance": "unknown",
+            "average_book_length": 0
+        }
+            
+        result = self.gemini._extract_json_from_text(response_text, "favorite_genres")
+  
+        if isinstance(result, dict):
+            return result
+        
+        # Fallback
+        return {
+            "favorite_genres": [],
+            "frequent_tropes": [],
+            "spice_tolerance": "unknown",
+           
+        }
