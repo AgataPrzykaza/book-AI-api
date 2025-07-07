@@ -4,3 +4,10 @@ configure/*.py
 
 venv/
 env/
+
+.idea/
+*.pyc
+__pycache__/
+
+**/cache/
+*.log
