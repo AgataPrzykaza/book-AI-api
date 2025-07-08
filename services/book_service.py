@@ -277,3 +277,66 @@ class BookService(BookServiceProtocol):
             "spice_tolerance": "unknown",
            
         }
+    def get_books_by_mood(
+        self,
+        mood: str,
+        read_books: Optional[List[BookRecommendation]] = None,  
+        count: int = 5,
+        preferred_genres: Optional[List[str]] = None,
+        spice_level: Optional[str] = None, 
+        avoid_triggers: Optional[List[str]] = None,
+        audience: Optional[str] = None 
+    ) -> List[BookRecommendation]:
+         
+        """Get book recommendations based on mood"""
+        
+        read_books_summary = ""
+        if read_books:
+            read_books_summary = "\n".join([
+                f"- '{book.title}' by {book.author}"
+                for book in read_books
+            ])
+       
+        genre_constraint = ""
+        if preferred_genres:
+            genre_constraint = f"\nFocus on these genres: {', '.join(preferred_genres)}"
+        
+        
+        avoid_triggers = ""
+        if avoid_triggers:
+            exclude_constraint = f"\nAvoid triggers: {', '.join(avoid_triggers)}"
+
+        
+        
+       
+        recommendations_list = ",\n                ".join(['"Title by Author"'] * count)
+        
+        prompt = f"""
+        You are a literary assistant. Based on the user's mood and additional infomrations, recommend **exactly {count} fiction books** 
+        that match their expectations. Mood: {mood}, spice level: {spice_level}, audience: {audience}, preferred genres: {genre_constraint}, avoid triggers: {avoid_triggers}
+
+        
+        Analyze their reading expectations, suitable with the current mood and recommend books that match given criteria.
+        Only include well-known books that are likely to appeal to someone with this criteria.
+        Keep in mind that the user has read these books:
+        {read_books_summary}, and enjoyed them.Do not recommend them again.
+        
+        Return the result as clean JSON:
+        {{
+            "recommendations": [
+                {recommendations_list}
+            ]
+        }}
+        """
+        
+        response_text = self.gemini._generate_content(prompt)
+        if not response_text:
+            return []
+            
+        data = self.gemini._extract_json_from_text(response_text, "recommendations")
+        if data and "recommendations" in data:
+            return [BookRecommendation.from_string(book) for book in data["recommendations"]]
+        
+        print("Could not extract history-based recommendations from response:", response_text)
+        return []
+    

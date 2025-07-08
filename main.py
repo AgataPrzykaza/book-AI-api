@@ -1,45 +1,4 @@
-# from services.book_service import BookService
-# from models.book  import BookRecommendation
 
-# def main():
-#     book_service = BookService()
-    
-#     # Test pojedynczych funkcji
-#     # genre = book_service.get_book_genre("A Court of Thorns and Roses", "Sarah J. Maas")
-#     # print("Genre:", genre)
-    
-#     # similar = book_service.get_similar_books("A Court of Thorns and Roses", "Sarah J. Maas")
-#     # print("📚 Similar books:")
-#     # for book in similar:
-#     #     print(f"  - {book.title} by {book.author}")
-    
-#     # print("📚 Similar  books for trope:")
-#     # books = book_service.get_books_for_trope("enemies to lovers", 5, "Fantasy")
-#     # for book in books:
-#     #     print(f"  - {book.title} by {book.author}")
-
-#     # spice = book_service.get_book_spice_level("A Court of Mist and Fury", "Sarah J. Maas")
-#     # print(f"Spice level: {spice['spice_level']}")
-#     # print(f"Warnings: {spice['content_warnings']}")
-
-#     # spice = book_service.get_book_spice_level("A Court of Silver Flames", "Sarah J. Maas")
-#     # print(f"Spice level: {spice['spice_level']}")
-#     # print(f"Warnings: {spice['content_warnings']}")
-
-#     reading_history = [
-#         BookRecommendation(title="A Court of Thorns and Roses", author="Sarah J. Maas"),
-#         BookRecommendation(title="A Court of Mist and Fury", author="Sarah J. Maas"),
-#         BookRecommendation(title="A Court of Silver Flames", author="Sarah J. Maas"),
-#         BookRecommendation(title="Fourth Wing", author="Rebbeca Yarros"),
-#     ]
-
-#     recomanded_books = book_service.get_recommendations_from_history(reading_history, 5,["Fantasy","Romantasy"])
-
-#     for book in recomanded_books :
-#         print(f"📚 {book.title} by {book.author}")
-
-# if __name__ == "__main__":
-#     main()
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -47,11 +6,10 @@ from services.book_service import BookService
 from models.book import BookRecommendation
 import traceback
 
-# Inicjalizacja Flask
 app = Flask(__name__)
-CORS(app)  # Pozwala na połączenia z frontendu
+CORS(app)  
 
-# Inicjalizacja serwisu książek
+
 book_service = BookService()
 
 @app.route('/api/health', methods=['GET'])
@@ -222,6 +180,46 @@ def get_books_by_trope_url(trope, count=5, genre=None):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/books/by-mood', methods=['POST'])
+def get_books_by_mood():
+    """Pobierz książki według nastroju"""
+    try:
+        data = request.get_json()
+        mood = data.get('mood')
+        read_books_data = data.get('read_books', [])
+        count = data.get('count', 5)
+        preferred_genres = data.get('preferred_genres')
+        spice_level = data.get('spice_level')
+        avoid_triggers = data.get('avoid_triggers')
+        audience = data.get('audience')
+        
+        if not mood:
+            return jsonify({"error": "Mood is required"}), 400
+        
+    
+        read_books = []
+        for book_data in read_books_data:
+            if 'title' in book_data and 'author' in book_data:
+                read_books.append(BookRecommendation(book_data['title'], book_data['author']))
+            else:
+                return jsonify({"error": "Each book must have 'title' and 'author'"}), 400
+        
+        recommendations = book_service.get_books_by_mood(
+            mood, read_books, count, preferred_genres, spice_level, avoid_triggers, audience
+        )
+        
+        return jsonify({
+            "mood": mood,
+            "recommendations": [
+                {"title": book.title, "author": book.author}
+                for book in recommendations
+            ]
+        })
+    
+    except Exception as e:
+        print(f"Error in mood recommendations: {traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/recommendations/history', methods=['POST'])
 def get_recommendations_from_history():
     """Pobierz rekomendacje na podstawie historii czytania"""
@@ -300,6 +298,11 @@ def not_found(error):
 @app.errorhandler(500)
 def internal_error(error):
     return jsonify({"error": "Internal server error"}), 500
+
+@app.errorhandler(405)
+def method_not_allowed(error):
+    return jsonify({"error": "Method not allowed"}), 405
+
 
 if __name__ == '__main__':
     print("🚀 Starting Book API...")

@@ -48,28 +48,29 @@ class BookServiceProtocol(ABC):
         }
         """
         pass
-    # @abstractmethod
-    # def get_books_by_mood(
-    #     self,
-    #     mood: str,
-    #     count: int = 5,
-    #     preferred_genres: Optional[List[str]] = None,
-    #     spice_level: Optional[str] = None,  # e.g., "low", "medium", "high"
-    #     avoid_triggers: Optional[List[str]] = None,  # e.g., ["death", "abuse"]
-    #     audience: Optional[str] = None  # e.g., "YA", "Adult", "New Adult"
-    # ) -> List[dict]:
-    #     """
-    #     Recommend books tailored to user's current mood and detailed preferences.
+    @abstractmethod
+    def get_books_by_mood(
+        self,
+        mood: str,
+        read_books: Optional[List] = None,  # Optional list of books user has read
+        count: int = 5,
+        preferred_genres: Optional[List[str]] = None,
+        spice_level: Optional[str] = None,  # e.g., "low", "medium", "high"
+        avoid_triggers: Optional[List[str]] = None,  # e.g., ["death", "abuse"]
+        audience: Optional[str] = None  # e.g., "YA", "Adult", "New Adult"
+    ) -> List:
+        """
+        Recommend books tailored to user's current mood and detailed preferences.
         
-    #     Parameters:
-    #     - mood: Emotional tone (e.g., "comforting", "heartbreaking", "cozy", "dark")
-    #     - count: Number of results to return
-    #     - preferred_genres: Limit recommendations to specific genres
-    #     - spice_level: Desired romantic/sexual content intensity
-    #     - avoid_triggers: Content warnings to avoid
-    #     - audience: Intended audience age group
+        Parameters:
+        - mood: Emotional tone (e.g., "comforting", "heartbreaking", "cozy", "dark")
+        - count: Number of results to return
+        - preferred_genres: Limit recommendations to specific genres
+        - spice_level: Desired romantic/sexual content intensity
+        - avoid_triggers: Content warnings to avoid
+        - audience: Intended audience age group
         
-    #     Returns:
-    #     A list of book recommendations with metadata.
-    #     """
-    #     pass
+        Returns:
+        A list of book recommendations with metadata.
+        """
+        pass
